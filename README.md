@@ -18,8 +18,8 @@ A Discord bot that silently collects your server's message history and surfaces 
 ## Installation
 
 ```bash
-git clone https://github.com/nivag1288/Teacher_Bot
-cd Teacher_Bot
+git clone https://github.com/nivag1288/Teacher_Tracker_Bot
+cd Teacher_Tracker_Bot
 pip install -r requirements.txt
 cp .env.example .env
 # edit .env with your credentials
