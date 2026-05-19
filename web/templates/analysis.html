@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Analysis — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div class="page-title">Semantic Analysis</div>
+
+<!-- Run form -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <h2 style="font-size:0.9rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem;">Run Analysis</h2>
+  <form method="post" action="/analysis/run" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem;">Channel</label>
+      <select name="channel_id" required style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+        {% for ch in all_channels %}
+        <option value="{{ ch.channel_id }}">#{{ ch.channel_name }}</option>
+        {% else %}
+        <option disabled>No channels yet</option>
+        {% endfor %}
+      </select>
+    </div>
+    <input type="hidden" name="guild_id" value="default">
+    <div>
+      <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem;">From</label>
+      <input type="date" name="date_from" required
+        style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+    </div>
+    <div>
+      <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem;">To</label>
+      <input type="date" name="date_to" required
+        style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+    </div>
+    <button type="submit"
+      style="background:var(--accent);color:#0f1117;border:none;border-radius:6px;padding:0.45rem 1rem;font-size:0.85rem;font-weight:600;cursor:pointer;">
+      Analyze
+    </button>
+  </form>
+  <p style="font-size:0.78rem;color:var(--muted);margin-top:0.75rem;">
+    Requires Ollama running locally. Results are cached — re-submitting the same channel + date range returns the existing result instantly.
+  </p>
+</div>
+
+<!-- Past results -->
+<div class="section">
+  <h2>Past Analyses</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>Date Range</th>
+          <th>Sentiment</th>
+          <th>Topics</th>
+          <th>Run At</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ r.channel_id }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ r.date_from }} → {{ r.date_to }}</td>
+          <td>
+            {% if r.sentiment == 'positive' %}
+              <span class="badge" style="background:rgba(63,185,80,0.2);color:var(--success);">positive</span>
+            {% elif r.sentiment == 'negative' %}
+              <span class="badge" style="background:rgba(248,81,73,0.2);color:var(--danger);">negative</span>
+            {% else %}
+              <span class="badge" style="background:rgba(139,148,158,0.2);color:var(--muted);">neutral</span>
+            {% endif %}
+          </td>
+          <td style="font-size:0.8rem;color:var(--muted);">{{ r.topics[:3]|join(', ') if r.topics else '—' }}</td>
+          <td style="font-size:0.78rem;color:var(--muted);">{{ r.created_at[:16].replace('T',' ') }}</td>
+          <td><a href="/analysis/{{ r.id }}" style="color:var(--accent);font-size:0.82rem;text-decoration:none;">View</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="color:var(--muted);">No analyses yet — run one above.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

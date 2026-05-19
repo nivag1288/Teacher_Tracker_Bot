@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Analysis #{{ result.id }} — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:0.5rem;">
+  <a href="/analysis" style="color:var(--muted);text-decoration:none;font-size:0.85rem;">← All Analyses</a>
+</div>
+<div class="page-title">Analysis — {{ result.channel_id }} ({{ result.date_from }} → {{ result.date_to }})</div>
+<div style="color:var(--muted);font-size:0.82rem;margin-bottom:1.5rem;">
+  Run at {{ result.created_at[:16].replace('T',' ') }} UTC
+</div>
+
+<div class="two-col" style="margin-bottom:1.5rem;">
+  <div class="stat-card">
+    <div class="label">Sentiment</div>
+    <div style="margin-top:0.4rem;">
+      {% if result.sentiment == 'positive' %}
+        <span class="badge" style="background:rgba(63,185,80,0.2);color:var(--success);font-size:1rem;padding:0.25rem 0.75rem;">positive</span>
+      {% elif result.sentiment == 'negative' %}
+        <span class="badge" style="background:rgba(248,81,73,0.2);color:var(--danger);font-size:1rem;padding:0.25rem 0.75rem;">negative</span>
+      {% else %}
+        <span class="badge" style="background:rgba(139,148,158,0.2);color:var(--muted);font-size:1rem;padding:0.25rem 0.75rem;">neutral</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Topics Identified</div>
+    <div class="value">{{ result.topics|length }}</div>
+  </div>
+</div>
+
+{% if result.topics %}
+<div class="section">
+  <h2>Topics</h2>
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+      {% for topic in result.topics %}
+      <span style="background:rgba(88,166,255,0.12);color:var(--accent);border:1px solid rgba(88,166,255,0.3);border-radius:12px;padding:0.2rem 0.7rem;font-size:0.82rem;">
+        {{ topic }}
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if result.summary %}
+<div class="section">
+  <h2>Summary</h2>
+  <div class="card">
+    <p style="line-height:1.7;color:var(--text);">{{ result.summary }}</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
