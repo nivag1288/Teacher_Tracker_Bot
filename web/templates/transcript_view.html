@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ filename }} — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:0.5rem;">
+  <a href="/transcripts" style="color:var(--muted);text-decoration:none;font-size:0.85rem;">← Transcripts</a>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+  <div class="page-title" style="margin-bottom:0;">{{ filename }}</div>
+  <a href="/transcripts/{{ filename }}/download"
+     style="background:var(--card-bg);color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.9rem;font-size:0.82rem;text-decoration:none;">
+    Download
+  </a>
+</div>
+
+<div class="card" style="padding:0;">
+  <pre style="margin:0;padding:1.25rem;overflow:auto;max-height:75vh;font-size:0.8rem;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-word;">{{ content }}</pre>
+</div>
+{% endblock %}

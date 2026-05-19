@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Transcripts — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div class="page-title">Transcripts</div>
+
+<!-- Generate form -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <h2 style="font-size:0.9rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem;">Generate Transcript</h2>
+  <form method="post" action="/transcripts/generate" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem;">Channel</label>
+      <select name="channel_id" required style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+        {% for ch in all_channels %}
+        <option value="{{ ch.channel_id }}">#{{ ch.channel_name }}</option>
+        {% else %}
+        <option disabled>No channels yet</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- hidden guild_id — populated by JS from channel selection or a fixed default -->
+    <input type="hidden" name="guild_id" value="default">
+
+    <div>
+      <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem;">From</label>
+      <input type="date" name="date_from" required
+        style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+    </div>
+    <div>
+      <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem;">To</label>
+      <input type="date" name="date_to" required
+        style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+    </div>
+    <button type="submit"
+      style="background:var(--accent);color:#0f1117;border:none;border-radius:6px;padding:0.45rem 1rem;font-size:0.85rem;font-weight:600;cursor:pointer;">
+      Generate
+    </button>
+  </form>
+</div>
+
+<!-- Saved transcripts -->
+<div class="section">
+  <h2>Saved Transcripts</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Channel ID</th>
+          <th>Date Range</th>
+          <th>Size</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transcripts %}
+        <tr>
+          <td style="font-family:monospace;font-size:0.8rem;">{{ t.filename }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ t.channel_id }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ t.date_from }} → {{ t.date_to }}</td>
+          <td style="color:var(--muted);font-size:0.82rem;">{{ t.size_kb }} KB</td>
+          <td>
+            <a href="/transcripts/{{ t.filename }}/view" style="color:var(--accent);text-decoration:none;font-size:0.82rem;margin-right:0.75rem;">View</a>
+            <a href="/transcripts/{{ t.filename }}/download" style="color:var(--muted);text-decoration:none;font-size:0.82rem;">Download</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="color:var(--muted);">No transcripts yet — generate one above.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
