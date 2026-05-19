@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div class="page-title">Dashboard</div>
+
+{% if backfill_running %}
+<div id="backfill-banner">
+  <span class="banner-text" id="banner-text">
+    Backfill in progress — loading...
+  </span>
+  <span class="dismiss" onclick="document.getElementById('backfill-banner').classList.add('hidden')">&#x2715;</span>
+</div>
+<script>
+  (function poll() {
+    fetch('/api/backfill-status')
+      .then(r => r.json())
+      .then(d => {
+        var banner = document.getElementById('backfill-banner');
+        if (!d.running) { banner.classList.add('hidden'); return; }
+        document.getElementById('banner-text').textContent =
+          'Backfill in progress — ' + d.channels_done + '/' + d.channels_total +
+          ' channels, ' + d.messages_ingested + ' messages ingested';
+        setTimeout(poll, 3000);
+      });
+  })();
+</script>
+{% endif %}
+
+{% if is_empty %}
+<div class="empty-state">
+  <h2>No data yet</h2>
+  <p>The bot is backfilling message history. Check back in a moment.</p>
+</div>
+{% else %}
+
+<!-- Scope selector -->
+<div class="scope-bar">
+  <label>Scope:</label>
+  <a href="/" class="{% if scope.mode == 'server' %}active{% endif %}">Server</a>
+  <a href="#" class="{% if scope.mode == 'channel' %}active{% endif %}" onclick="document.getElementById('channel-select').style.display='inline-block';return false;">Channel</a>
+  <a href="#" class="{% if scope.mode == 'user' %}active{% endif %}" onclick="document.getElementById('user-select').style.display='inline-block';return false;">User</a>
+
+  <select id="channel-select" style="display:{% if scope.mode == 'channel' %}inline-block{% else %}none{% endif %};"
+    onchange="window.location='/?scope=channel&channel_id='+this.value">
+    <option value="">— pick channel —</option>
+    {% for ch in all_channels %}
+    <option value="{{ ch.channel_id }}" {% if ch.channel_id == scope.channel_id %}selected{% endif %}>
+      #{{ ch.channel_name }}
+    </option>
+    {% endfor %}
+  </select>
+
+  <select id="user-select" style="display:{% if scope.mode == 'user' %}inline-block{% else %}none{% endif %};"
+    onchange="window.location='/?scope=user&user_id='+this.value">
+    <option value="">— pick user —</option>
+    {% for u in all_users %}
+    <option value="{{ u.author_id }}" {% if u.author_id == scope.user_id %}selected{% endif %}>
+      {{ u.author_name }}
+    </option>
+    {% endfor %}
+  </select>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="label">Total Messages</div>
+    <div class="value">{{ stats.total_messages }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Unique Users</div>
+    <div class="value">{{ stats.unique_users }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Channels Tracked</div>
+    <div class="value">{{ stats.channels_tracked }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Today</div>
+    <div class="value">{{ stats.messages_today }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">This Week</div>
+    <div class="value">{{ stats.messages_this_week }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Reactions</div>
+    <div class="value">{{ stats.reaction_totals }}</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <!-- Top users -->
+  {% if scope.mode != 'user' %}
+  <div class="section">
+    <h2>Top Users</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>#</th><th>User</th><th>Messages</th></tr></thead>
+        <tbody>
+          {% for u in stats.top_users %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="/users/{{ u.author_id }}" style="color:var(--accent);text-decoration:none;">{{ u.author_name }}</a></td>
+            <td>{{ u.count }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" style="color:var(--muted);">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Top channels -->
+  {% if scope.mode != 'channel' %}
+  <div class="section">
+    <h2>Top Channels</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>#</th><th>Channel</th><th>Messages</th></tr></thead>
+        <tbody>
+          {% for ch in stats.top_channels %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="/channels/{{ ch.channel_id }}" style="color:var(--accent);text-decoration:none;">#{{ ch.channel_name }}</a></td>
+            <td>{{ ch.count }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" style="color:var(--muted);">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if scope.mode == 'server' %}
+<!-- Recent member events -->
+<div class="section">
+  <h2>Recent Member Events</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>User</th><th>Event</th><th>When</th></tr></thead>
+      <tbody>
+        {% for ev in stats.recent_members %}
+        <tr>
+          <td>{{ ev.user_name }}</td>
+          <td><span class="badge badge-{{ ev.event_type }}">{{ ev.event_type }}</span></td>
+          <td style="color:var(--muted);font-size:0.8rem;">{{ ev.timestamp[:19].replace('T',' ') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="color:var(--muted);">No member events recorded</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Backfill timestamps -->
+<div class="section">
+  <h2>Last Backfill per Channel</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Channel</th><th>Last Backfill</th></tr></thead>
+      <tbody>
+        {% for b in stats.backfill_timestamps %}
+        <tr>
+          <td>#{{ b.channel_name }}</td>
+          <td style="color:var(--muted);font-size:0.8rem;">{{ b.last_backfill[:19].replace('T',' ') if b.last_backfill else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" style="color:var(--muted);">No backfill data yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

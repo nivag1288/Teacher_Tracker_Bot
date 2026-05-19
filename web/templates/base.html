@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Teacher Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">Teacher Tracker</div>
+    <nav class="sidebar-nav">
+      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Dashboard</a>
+      <a href="/users" class="{% if request.url.path.startswith('/users') %}active{% endif %}">Users</a>
+      <a href="/channels" class="{% if request.url.path.startswith('/channels') %}active{% endif %}">Channels</a>
+      <a href="/leaderboard" class="{% if request.url.path.startswith('/leaderboard') %}active{% endif %}">Leaderboard</a>
+      <a href="/transcripts" class="{% if request.url.path.startswith('/transcripts') %}active{% endif %}">Transcripts</a>
+      <a href="/analysis" class="{% if request.url.path.startswith('/analysis') %}active{% endif %}">Analysis</a>
+    </nav>
+  </aside>
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
