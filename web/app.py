@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from tracker.backfill import BackfillStatus
-from web.routes import dashboard, users, channels
+from web.routes import dashboard, users, channels, leaderboard
 
 
 def create_app(db_path: str, status: BackfillStatus) -> FastAPI:
@@ -16,4 +16,5 @@ def create_app(db_path: str, status: BackfillStatus) -> FastAPI:
     app.include_router(dashboard.router)
     app.include_router(users.router)
     app.include_router(channels.router)
+    app.include_router(leaderboard.router)
     return app

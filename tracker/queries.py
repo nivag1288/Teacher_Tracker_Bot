@@ -265,3 +265,84 @@ class StatsQuery:
             }
             for r in rows
         ]
+
+    async def leaderboard(self, type: str = "messages", limit: int = 25) -> list[dict]:
+        """Ranked leaderboard with this-week vs last-week trend."""
+        async with aiosqlite.connect(self.db_path) as db:
+            if type == "messages":
+                sql = """
+                    SELECT author_id, author_name,
+                        COUNT(*) as total,
+                        SUM(CASE WHEN timestamp >= datetime('now','-7 days') THEN 1 ELSE 0 END) as this_week,
+                        SUM(CASE WHEN timestamp >= datetime('now','-14 days')
+                                  AND timestamp < datetime('now','-7 days') THEN 1 ELSE 0 END) as last_week
+                    FROM messages
+                    GROUP BY author_id ORDER BY total DESC LIMIT ?
+                """
+                params = [limit]
+            elif type == "reactions":
+                sql = """
+                    SELECT r.target_author_id as author_id,
+                        COALESCE(m.author_name, r.target_author_id) as author_name,
+                        SUM(r.count) as total,
+                        0 as this_week, 0 as last_week
+                    FROM reactions r
+                    LEFT JOIN (SELECT DISTINCT author_id, author_name FROM messages) m
+                        ON m.author_id = r.target_author_id
+                    GROUP BY r.target_author_id ORDER BY total DESC LIMIT ?
+                """
+                params = [limit]
+            elif type == "replies_sent":
+                sql = """
+                    SELECT author_id, author_name,
+                        COUNT(*) as total,
+                        SUM(CASE WHEN timestamp >= datetime('now','-7 days') THEN 1 ELSE 0 END) as this_week,
+                        SUM(CASE WHEN timestamp >= datetime('now','-14 days')
+                                  AND timestamp < datetime('now','-7 days') THEN 1 ELSE 0 END) as last_week
+                    FROM messages WHERE is_reply = 1
+                    GROUP BY author_id ORDER BY total DESC LIMIT ?
+                """
+                params = [limit]
+            elif type == "replies_received":
+                sql = """
+                    SELECT reply_to_author_id as author_id,
+                        MAX(author_name) as author_name,
+                        COUNT(*) as total,
+                        SUM(CASE WHEN timestamp >= datetime('now','-7 days') THEN 1 ELSE 0 END) as this_week,
+                        SUM(CASE WHEN timestamp >= datetime('now','-14 days')
+                                  AND timestamp < datetime('now','-7 days') THEN 1 ELSE 0 END) as last_week
+                    FROM messages
+                    WHERE reply_to_author_id IS NOT NULL
+                    GROUP BY reply_to_author_id ORDER BY total DESC LIMIT ?
+                """
+                params = [limit]
+            else:
+                return []
+
+            cur = await db.execute(sql, params)
+            rows = await cur.fetchall()
+
+        result = []
+        for i, r in enumerate(rows, 1):
+            this_week = r[3]
+            last_week = r[4]
+            if last_week == 0 and this_week > 0:
+                trend = "up"
+            elif this_week == 0 and last_week > 0:
+                trend = "down"
+            elif this_week > last_week:
+                trend = "up"
+            elif this_week < last_week:
+                trend = "down"
+            else:
+                trend = "flat"
+            result.append({
+                "rank": i,
+                "author_id": r[0],
+                "author_name": r[1],
+                "total": r[2],
+                "this_week": this_week,
+                "last_week": last_week,
+                "trend": trend,
+            })
+        return result

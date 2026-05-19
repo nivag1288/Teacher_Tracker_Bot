@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div class="page-title">Leaderboard</div>
+
+<div class="scope-bar" style="margin-bottom:1.5rem;">
+  <label>Sort by:</label>
+  <a href="/leaderboard?type=messages&limit={{ limit }}"
+     class="{% if lb_type == 'messages' %}active{% endif %}">Messages</a>
+  <a href="/leaderboard?type=reactions&limit={{ limit }}"
+     class="{% if lb_type == 'reactions' %}active{% endif %}">Reactions</a>
+  <a href="/leaderboard?type=replies_sent&limit={{ limit }}"
+     class="{% if lb_type == 'replies_sent' %}active{% endif %}">Replies Sent</a>
+  <a href="/leaderboard?type=replies_received&limit={{ limit }}"
+     class="{% if lb_type == 'replies_received' %}active{% endif %}">Replies Received</a>
+
+  <label style="margin-left:1rem;">Limit:</label>
+  <select onchange="window.location='/leaderboard?type={{ lb_type }}&limit='+this.value">
+    {% for n in [10, 25, 50, 100] %}
+    <option value="{{ n }}" {% if limit == n %}selected{% endif %}>{{ n }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>User</th>
+        <th>
+          {% if lb_type == 'messages' %}Messages
+          {% elif lb_type == 'reactions' %}Reactions Received
+          {% elif lb_type == 'replies_sent' %}Replies Sent
+          {% else %}Times Replied To
+          {% endif %}
+        </th>
+        <th>This Week</th>
+        <th>Last Week</th>
+        <th>Trend</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td style="color:var(--muted);">{{ row.rank }}</td>
+        <td>
+          <a href="/users/{{ row.author_id }}" style="color:var(--accent);text-decoration:none;">
+            {{ row.author_name }}
+          </a>
+        </td>
+        <td>{{ row.total }}</td>
+        <td>{{ row.this_week }}</td>
+        <td>{{ row.last_week }}</td>
+        <td>
+          {% if row.trend == 'up' %}
+            <span style="color:var(--success);">&#x25B2;</span>
+          {% elif row.trend == 'down' %}
+            <span style="color:var(--danger);">&#x25BC;</span>
+          {% else %}
+            <span style="color:var(--muted);">&#x2014;</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="color:var(--muted);">No data yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
