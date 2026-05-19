@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS members (
     user_name TEXT NOT NULL,
     guild_id TEXT NOT NULL,
     event_type TEXT NOT NULL,
-    timestamp TEXT NOT NULL
+    timestamp TEXT NOT NULL,
+    UNIQUE(user_id, guild_id, event_type, timestamp)
 )
 """
 
