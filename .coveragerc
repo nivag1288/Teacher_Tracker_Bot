@@ -1,0 +1,12 @@
+[run]
+source = .
+omit =
+    bot/main.py
+    tests/*
+    web/static/*
+    web/templates/*
+    docs/*
+    */site-packages/*
+
+[report]
+show_missing = True
