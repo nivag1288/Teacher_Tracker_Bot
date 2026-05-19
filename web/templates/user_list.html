@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Users — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div class="page-title">Users</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>User</th>
+        <th>Messages</th>
+        <th>Reactions Received</th>
+        <th>First Seen</th>
+        <th>Last Seen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          <a href="/users/{{ u.author_id }}" style="color:var(--accent);text-decoration:none;">
+            {{ u.author_name }}
+          </a>
+        </td>
+        <td>{{ u.msg_count }}</td>
+        <td>{{ u.reactions }}</td>
+        <td style="color:var(--muted);font-size:0.8rem;">{{ u.first_seen[:10] if u.first_seen else '—' }}</td>
+        <td style="color:var(--muted);font-size:0.8rem;">{{ u.last_seen[:10] if u.last_seen else '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="color:var(--muted);">No users yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

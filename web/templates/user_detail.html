@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ summary.author_name }} — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:0.5rem;">
+  <a href="/users" style="color:var(--muted);text-decoration:none;font-size:0.85rem;">← All Users</a>
+</div>
+<div class="page-title">{{ summary.author_name }}</div>
+<div style="color:var(--muted);font-size:0.82rem;margin-bottom:1.5rem;">
+  First seen: {{ summary.first_seen[:10] if summary.first_seen else '—' }} &nbsp;·&nbsp;
+  Last seen: {{ summary.last_seen[:10] if summary.last_seen else '—' }}
+  &nbsp;·&nbsp;
+  <a href="/?scope=user&user_id={{ user_id }}" style="color:var(--accent);">View on Dashboard</a>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="label">Total Messages</div>
+    <div class="value">{{ stats.total_messages }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Today</div>
+    <div class="value">{{ stats.messages_today }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">This Week</div>
+    <div class="value">{{ stats.messages_this_week }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Reactions Received</div>
+    <div class="value">{{ stats.reaction_totals }}</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="section">
+    <h2>Top Channels</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>#</th><th>Channel</th><th>Messages</th></tr></thead>
+        <tbody>
+          {% for ch in stats.top_channels %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="/channels/{{ ch.channel_id }}" style="color:var(--accent);text-decoration:none;">#{{ ch.channel_name }}</a></td>
+            <td>{{ ch.count }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" style="color:var(--muted);">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Most Reacted Messages</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>Channel</th><th>Message</th><th>Reactions</th></tr></thead>
+        <tbody>
+          {% for m in stats.most_reacted %}
+          {% if m.reactions > 0 %}
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem;">#{{ m.channel_name }}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ m.content }}</td>
+            <td>{{ m.reactions }}</td>
+          </tr>
+          {% endif %}
+          {% else %}
+          <tr><td colspan="3" style="color:var(--muted);">No reacted messages</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

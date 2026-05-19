@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Channels — Teacher Tracker{% endblock %}
+
+{% block content %}
+<div class="page-title">Channels</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Channel</th>
+        <th>Messages</th>
+        <th>Unique Users</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ch in channels %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          <a href="/channels/{{ ch.channel_id }}" style="color:var(--accent);text-decoration:none;">
+            #{{ ch.channel_name }}
+          </a>
+        </td>
+        <td>{{ ch.msg_count }}</td>
+        <td>{{ ch.unique_authors }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" style="color:var(--muted);">No channels yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -167,3 +167,101 @@ class StatsQuery:
             )
             rows = await cur.fetchall()
         return [{"author_id": r[0], "author_name": r[1]} for r in rows]
+
+    async def user_summary(self, user_id: str) -> Optional[dict]:
+        """First/last seen timestamps and display name for a user."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cur = await db.execute(
+                "SELECT author_name, MIN(timestamp), MAX(timestamp) "
+                "FROM messages WHERE author_id = ? GROUP BY author_id",
+                [user_id],
+            )
+            row = await cur.fetchone()
+        if not row:
+            return None
+        return {"author_name": row[0], "first_seen": row[1], "last_seen": row[2]}
+
+    async def user_list(self) -> list[dict]:
+        """All users with message count, reactions received, first/last seen."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cur = await db.execute(
+                "SELECT m.author_id, m.author_name, COUNT(m.id) as msg_count, "
+                "  MIN(m.timestamp) as first_seen, MAX(m.timestamp) as last_seen, "
+                "  COALESCE(SUM(r.count), 0) as reactions "
+                "FROM messages m "
+                "LEFT JOIN reactions r ON r.target_author_id = m.author_id "
+                "GROUP BY m.author_id ORDER BY msg_count DESC"
+            )
+            rows = await cur.fetchall()
+        return [
+            {
+                "author_id": r[0],
+                "author_name": r[1],
+                "msg_count": r[2],
+                "first_seen": r[3],
+                "last_seen": r[4],
+                "reactions": r[5],
+            }
+            for r in rows
+        ]
+
+    async def most_reacted_messages(self, scope: Scope, limit: int = 5) -> list[dict]:
+        """Messages with the most reactions, optionally scoped."""
+        if scope.mode == "channel" and scope.channel_id:
+            where, params = "WHERE m.channel_id = ?", [scope.channel_id]
+        elif scope.mode == "user" and scope.user_id:
+            where, params = "WHERE m.author_id = ?", [scope.user_id]
+        else:
+            where, params = "", []
+        async with aiosqlite.connect(self.db_path) as db:
+            cur = await db.execute(
+                f"SELECT m.message_id, m.author_name, m.channel_name, m.content, "
+                f"COALESCE(SUM(r.count), 0) as total_reactions "
+                f"FROM messages m LEFT JOIN reactions r ON r.message_id = m.message_id "
+                f"{where} "
+                f"GROUP BY m.message_id ORDER BY total_reactions DESC LIMIT ?",
+                params + [limit],
+            )
+            rows = await cur.fetchall()
+        return [
+            {
+                "message_id": r[0],
+                "author_name": r[1],
+                "channel_name": r[2],
+                "content": r[3],
+                "reactions": r[4],
+            }
+            for r in rows
+        ]
+
+    async def channel_summary(self, channel_id: str) -> Optional[dict]:
+        """Name and unique author count for a channel."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cur = await db.execute(
+                "SELECT channel_name, COUNT(DISTINCT author_id) "
+                "FROM messages WHERE channel_id = ? GROUP BY channel_id",
+                [channel_id],
+            )
+            row = await cur.fetchone()
+        if not row:
+            return None
+        return {"channel_name": row[0], "unique_authors": row[1]}
+
+    async def channel_list(self) -> list[dict]:
+        """All channels with message count and unique author count."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cur = await db.execute(
+                "SELECT channel_id, channel_name, COUNT(*) as msg_count, "
+                "COUNT(DISTINCT author_id) as unique_authors "
+                "FROM messages GROUP BY channel_id ORDER BY msg_count DESC"
+            )
+            rows = await cur.fetchall()
+        return [
+            {
+                "channel_id": r[0],
+                "channel_name": r[1],
+                "msg_count": r[2],
+                "unique_authors": r[3],
+            }
+            for r in rows
+        ]
