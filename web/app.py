@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from tracker.backfill import BackfillStatus
 from web.routes import dashboard, users, channels, leaderboard, transcripts, analysis
+from web.routes import status as status_route
 
 
 def create_app(
@@ -26,4 +27,5 @@ def create_app(
     app.include_router(leaderboard.router)
     app.include_router(transcripts.router)
     app.include_router(analysis.router)
+    app.include_router(status_route.router)
     return app

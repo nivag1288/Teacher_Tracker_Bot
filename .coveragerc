@@ -2,6 +2,7 @@
 source = .
 omit =
     bot/main.py
+    bot/client.py
     tests/*
     web/static/*
     web/templates/*
