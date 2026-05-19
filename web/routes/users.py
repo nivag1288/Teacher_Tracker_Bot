@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
 from tracker.queries import StatsQuery, Scope
+from visualization import charts
 
 router = APIRouter()
 _templates_dir = Path(__file__).parent.parent / "templates"
@@ -36,8 +37,17 @@ async def user_detail(request: Request, user_id: str):
         "active_hours": await q.active_hours(scope),
         "most_reacted": await q.most_reacted_messages(scope),
     }
+    chart_trend = charts.daily_trend(stats["daily_trend"])
+    chart_heatmap = charts.hourly_heatmap(stats["active_hours"])
+
     return templates.TemplateResponse(
         request,
         "user_detail.html",
-        {"summary": summary, "user_id": user_id, "stats": stats},
+        {
+            "summary": summary,
+            "user_id": user_id,
+            "stats": stats,
+            "chart_trend": chart_trend,
+            "chart_heatmap": chart_heatmap,
+        },
     )
