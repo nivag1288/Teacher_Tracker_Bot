@@ -28,6 +28,7 @@ def make_mock_message(
     author_name="Alice",
     content="Hello world",
     is_bot=False,
+    webhook_id=None,
     reference=None,
     attachments=None,
     mentions=None,
@@ -38,6 +39,7 @@ def make_mock_message(
     msg.author = make_mock_author(author_id, author_name, is_bot)
     msg.content = content
     msg.created_at = _now()
+    msg.webhook_id = webhook_id
     msg.reference = reference
     msg.attachments = attachments or []
     msg.mentions = mentions or []
@@ -118,20 +120,27 @@ async def test_backfill_channel_inserts_messages(engine):
         assert (await cursor.fetchone())[0] == 2
 
 
-async def test_backfill_channel_skips_bots(engine):
+async def test_backfill_channel_includes_webhook_bots(engine):
+    """Webhook bot messages are stored; display_name used as synthetic author_id."""
     eng, status, db_path = engine
     msgs = [
-        make_mock_message(101, is_bot=False),
-        make_mock_message(102, is_bot=True),
+        make_mock_message(101, author_name="Alice", is_bot=False),
+        make_mock_message(102, author_name="BotStudent", is_bot=True, webhook_id="wh123"),
     ]
     channel = make_mock_channel(messages=msgs)
 
     count = await eng.backfill_channel(channel)
 
-    assert count == 1
+    assert count == 2
     async with aiosqlite.connect(db_path) as db:
         cursor = await db.execute("SELECT COUNT(*) FROM messages")
-        assert (await cursor.fetchone())[0] == 1
+        assert (await cursor.fetchone())[0] == 2
+        cursor = await db.execute(
+            "SELECT author_id, author_name FROM messages WHERE message_id = '102'"
+        )
+        row = await cursor.fetchone()
+    assert row[0] == "webhook_BotStudent"
+    assert row[1] == "BotStudent"
 
 
 async def test_backfill_channel_upsert_no_duplicate(engine):
@@ -358,7 +367,7 @@ async def test_backfill_members_inserts_joins(engine):
         assert (await cursor.fetchone())[0] == 2
 
 
-async def test_backfill_members_skips_bots(engine):
+async def test_backfill_members_includes_bots(engine):
     eng, status, db_path = engine
     members = [
         make_mock_member(1, "Alice", bot=False),
@@ -368,7 +377,7 @@ async def test_backfill_members_skips_bots(engine):
 
     count = await eng.backfill_members(guild)
 
-    assert count == 1
+    assert count == 2
 
 
 async def test_backfill_members_idempotent(engine):

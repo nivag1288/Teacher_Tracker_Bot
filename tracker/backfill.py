@@ -4,6 +4,20 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
+EXCLUDED_USERS_FILE = "excluded_users.txt"
+
+
+def _load_excluded_users(path: str = EXCLUDED_USERS_FILE) -> set[str]:
+    try:
+        with open(path) as f:
+            return {
+                line.strip()
+                for line in f
+                if line.strip() and not line.startswith("#")
+            }
+    except FileNotFoundError:
+        return set()
+
 
 @dataclass
 class BackfillStatus:
@@ -17,6 +31,7 @@ class BackfillEngine:
     def __init__(self, db_path: str, status: BackfillStatus):
         self.db_path = db_path
         self.status = status
+        self.excluded_users = _load_excluded_users()
 
     async def _get_after_snowflake(self, channel_id: str) -> Optional[discord.Object]:
         async with aiosqlite.connect(self.db_path) as db:
@@ -43,7 +58,7 @@ class BackfillEngine:
 
         async with aiosqlite.connect(self.db_path) as db:
             async for msg in channel.history(**history_kwargs):
-                if msg.author.bot:
+                if msg.author.display_name in self.excluded_users:
                     continue
 
                 reply_to_author_id = None
@@ -51,6 +66,14 @@ class BackfillEngine:
                     ref = msg.reference.resolved
                     if hasattr(ref, "author") and ref.author:
                         reply_to_author_id = str(ref.author.id)
+
+                # Webhook messages share one author.id; use display_name so each
+                # simulated student (e.g. from Student_Sim) gets a unique identity.
+                author_id = (
+                    f"webhook_{msg.author.display_name}"
+                    if msg.webhook_id
+                    else str(msg.author.id)
+                )
 
                 words = msg.content.split() if msg.content else []
                 await db.execute(
@@ -65,7 +88,7 @@ class BackfillEngine:
                         char_count=excluded.char_count""",
                     (
                         str(msg.id),
-                        str(msg.author.id),
+                        author_id,
                         msg.author.display_name,
                         str(channel.id),
                         channel.name,
@@ -96,7 +119,7 @@ class BackfillEngine:
                             guild_id,
                             str(reaction.emoji),
                             reaction.count,
-                            str(msg.author.id),
+                            author_id,
                             now,
                         ),
                     )
@@ -125,7 +148,7 @@ class BackfillEngine:
 
         async with aiosqlite.connect(self.db_path) as db:
             for member in guild.members:
-                if member.bot:
+                if member.display_name in self.excluded_users:
                     continue
                 ts = member.joined_at.isoformat() if member.joined_at else now
                 await db.execute(
@@ -141,7 +164,7 @@ class BackfillEngine:
                 if entry.action not in leave_actions:
                     continue
                 target = entry.target
-                if target is None or (hasattr(target, "bot") and target.bot):
+                if target is None:
                     continue
                 ts = entry.created_at.isoformat() if entry.created_at else now
                 await db.execute(

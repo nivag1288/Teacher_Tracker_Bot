@@ -207,10 +207,14 @@ def test_config_defaults(monkeypatch):
 
 
 def test_config_missing_token_raises(monkeypatch):
+    import importlib, dotenv
+    import bot.config as cfg
+
     monkeypatch.delenv("DISCORD_TOKEN", raising=False)
     monkeypatch.setenv("DISCORD_GUILD_ID", "123")
-    from bot.config import ConfigError
-    import importlib
-    import bot.config as cfg
-    with pytest.raises((ConfigError, SystemExit, Exception)):
+    # Patch dotenv so reload can't re-read .env and restore the token.
+    # ConfigError is re-created by reload so we can't match by class identity;
+    # match by message instead.
+    monkeypatch.setattr(dotenv, "load_dotenv", lambda **_: None)
+    with pytest.raises(Exception, match="DISCORD_TOKEN"):
         importlib.reload(cfg)

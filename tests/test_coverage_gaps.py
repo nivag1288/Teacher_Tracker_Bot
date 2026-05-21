@@ -69,7 +69,7 @@ async def test_backfill_members_records_kick(engine):
     assert row[1] == "leave"
 
 
-async def test_backfill_members_skips_bot_kick(engine):
+async def test_backfill_members_includes_bot_kick(engine):
     eng, db_path = engine
 
     target = MagicMock()
@@ -86,8 +86,13 @@ async def test_backfill_members_skips_bot_kick(engine):
     await eng.backfill_members(guild)
 
     async with aiosqlite.connect(db_path) as db:
-        cur = await db.execute("SELECT COUNT(*) FROM members WHERE user_id = '88'")
-        assert (await cur.fetchone())[0] == 0
+        cur = await db.execute(
+            "SELECT user_name, event_type FROM members WHERE user_id = '88'"
+        )
+        row = await cur.fetchone()
+    assert row is not None
+    assert row[0] == "BotTarget"
+    assert row[1] == "leave"
 
 
 async def test_backfill_members_skips_non_leave_audit_action(engine):

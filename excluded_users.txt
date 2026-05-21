@@ -1,0 +1,12 @@
+# Users to exclude from tracking.
+# One display name per line. Lines starting with # are ignored.
+# Example:
+LOL_Rag
+Gavin Koonts
+GPT Integration
+Blackjack
+BlackJack
+HelloWorld
+Social_Simulation
+Teacher_Bot
+Student_Bot

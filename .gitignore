@@ -11,3 +11,5 @@ htmlcov/
 dist/
 build/
 .DS_Store
+.idea/
+.venv/
